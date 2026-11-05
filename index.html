@@ -212,6 +212,41 @@ textarea.txt:focus { background: rgba(255, 255, 255, .35); }
 .chipbtn[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 700; }
 .chipbtn[aria-pressed="true"] small { color: var(--accent); }
 .vis-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 16px; align-items: start; }
+.promptbox { border: 1.5px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--surface); }
+.promptbox:focus-within { border-color: var(--accent); }
+.promptbox .lockline { border: 0; border-bottom: 1px dashed var(--line); border-radius: 0; }
+.promptbox textarea { border: 0; border-radius: 0; box-shadow: none; outline: none; }
+.kwrow { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 8px; }
+.allchk { display: flex; align-items: center; gap: 10px; margin-top: 10px; padding: 10px 14px; border: 2px solid var(--accent); border-radius: 12px; background: var(--accent-soft); color: var(--accent); font-weight: 800; font-size: 15px; cursor: pointer; }
+.allchk input { width: 22px; height: 22px; flex: none; accent-color: var(--good); }
+.allchk .em { font-size: 18px; }
+.allchk .allok { display: none; margin-left: auto; font-weight: 700; font-size: 13px; color: var(--good); }
+.allchk:has(input:checked) { border-color: var(--good); background: var(--good-soft); color: var(--good); }
+.allchk:has(input:checked) .allok { display: inline; }
+.kwchk { display: flex; align-items: baseline; gap: 8px; background: var(--accent-soft); color: var(--ink); border-radius: 10px; padding: 6px 10px; font-size: 14px; cursor: pointer; }
+.kwchk.on { background: var(--good-soft, #e3f4ec); }
+.kwchk input { width: 18px; height: 18px; flex: none; align-self: center; accent-color: var(--accent); }
+.kwchk b { font-size: 12.5px; color: var(--accent); flex: none; }
+.kwchk span { color: var(--muted); min-width: 0; overflow-wrap: anywhere; }
+.kw { display: inline-flex; gap: 6px; align-items: baseline; background: var(--accent-soft); color: var(--accent); border-radius: 999px; padding: 3px 11px; font-size: 13.5px; }
+.kw b { font-size: 12px; opacity: .85; }
+.revwrap { margin-top: 8px; }
+.revbox { border: 2px solid var(--accent); border-radius: 12px; padding: 8px 12px; background: var(--accent-soft); }
+.revbox > b { display: flex; align-items: center; gap: 6px; color: var(--accent); font-size: 14px; }
+.revcols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 4px; }
+.revcols small { color: var(--muted); font-weight: 700; }
+.revcols p { margin: 2px 0 0; font-size: 14px; overflow-wrap: anywhere; }
+@media (max-width: 520px) { .revcols { grid-template-columns: minmax(0, 1fr); } }
+.stephead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; font-weight: 700; margin-bottom: 4px; }
+.stephead b { background: var(--accent); color: #fff; border-radius: 50%; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; }
+.stephead small { flex-basis: 100%; font-weight: 400; }
+.exbox { flex-basis: 100%; margin-top: 4px; padding: 8px 14px; background: var(--good-soft); border-left: 5px solid var(--good); border-radius: 10px; font-weight: 400; }
+.stephead .exbox b, .exbox b { display: flex; align-items: center; justify-content: flex-start; gap: 6px; width: auto; height: auto; background: none; border-radius: 0; color: var(--good); font-size: 14px; margin-bottom: 2px; }
+.exbox p { margin: 2px 0; font-size: 15px; line-height: 1.5; font-weight: 700; color: var(--ink); }
+.sublabel { display: block; margin-top: 10px; font-size: 13px; font-weight: 700; }
+.lockline { background: var(--surface-2); border: 1px dashed var(--line); border-radius: 10px; padding: 8px 12px; color: var(--muted); font-size: 13.5px; }
+.lockline b { color: var(--ink); }
+details.help + details.help { margin-top: 0; }
 .vis-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .vis-grid .wide { grid-column: 1 / -1; }
 @media (max-width: 520px) { .vis-grid { grid-template-columns: minmax(0, 1fr); } }
@@ -277,7 +312,7 @@ body.dragging { user-select: none; -webkit-user-select: none; cursor: grabbing; 
     el.append(kid.nodeType ? kid : document.createTextNode(kid));
   }
   function newCard(text) { return { id: uid(), text: text || '' }; }
-  function newVisual() { return { scene: '', action: '', setting: '', mood: '', camera: '', custom: null, rec: {}, owner: '' }; }
+  function newVisual() { return { scene: '', action: '', setting: '', mood: '', camera: '', style: '', first: '', custom: null, chk: {}, rec: {}, owner: '' }; }
   function newPage() { return Object.assign({ id: uid(), cards: [], star: false }, newVisual()); }
   function blankState() {
     var pages = [];
@@ -298,7 +333,9 @@ body.dragging { user-select: none; -webkit-user-select: none; cursor: grabbing; 
     v.setting = valueOf(p, label + ' 배경');
     v.mood = valueOf(p, label + ' 색감·분위기');
     v.camera = valueOf(p, label + ' 구도');
-    v.custom = valueOf(p, label + ' 이미지 프롬프트 초안') ? valueOf(p, label + ' 이미지 프롬프트') : null;
+    v.style = valueOf(p, label + ' 그림체');
+    v.first = valueOf(p, label + ' 처음 프롬프트');
+    v.custom = valueOf(p, label + ' 이미지 프롬프트') || null;
     var r = v.rec = {};
     var ch = valueOf(p, label + ' 바꿨는지'), fe = valueOf(p, label + ' 결과 느낌');
     r.changed = ch === REC_CH.yes ? 'yes' : ch === REC_CH.no ? 'no' : '';
@@ -468,7 +505,7 @@ body.dragging { user-select: none; -webkit-user-select: none; cursor: grabbing; 
     save(); render();
   }
   function hasWork(p) {
-    return !!(p.scene || p.action || p.setting || p.mood || p.camera || (typeof p.custom === 'string') || p.star);
+    return !!(p.scene || p.action || p.setting || p.mood || p.camera || p.style || p.first || (typeof p.custom === 'string' && p.custom.trim()) || p.star);
   }
   function removePage(i, force) {
     var p = state.pages[i];
@@ -549,7 +586,7 @@ body.dragging { user-select: none; -webkit-user-select: none; cursor: grabbing; 
     var rows = [];
     function row(label, v, text) {
       rows.push({ page: label, owner: ownerLabel(v), text: text, scene: v.scene || '', action: v.action || '', setting: v.setting || '',
-        mood: v.mood || '', camera: v.camera || '', prompt: finalPrompt(v).trim(), edited: isEdited(v), star: !!v.star });
+        mood: v.mood || '', camera: v.camera || '', style: v.style || '', prompt: finalPrompt(v).trim(), first: v.first || '', edited: isEdited(v), star: !!v.star });
     }
     if (isMine(state.cover)) row('표지', state.cover, state.title || '');
     state.pages.forEach(function (p, i) { if (isMine(p)) row((i + 1) + '쪽', p, pageText(p)); });
@@ -808,6 +845,12 @@ body.dragging { user-select: none; -webkit-user-select: none; cursor: grabbing; 
     setting: { items: [
       { l: '교실', t: '교실' }, { l: '복도', t: '학교 복도' }, { l: '운동장', t: '운동장' }, { l: '집', t: '집' },
       { l: '방 안', t: '방 안' }, { l: '거리', t: '거리' }, { l: '공원', t: '공원' }] },
+    mood: { items: [
+      { l: '신나는', t: '신나는 분위기' }, { l: '따뜻한', t: '따뜻한 분위기' }, { l: '조용한', t: '조용한 분위기' },
+      { l: '긴장된', t: '긴장된 분위기' }, { l: '무서운', t: '무서운 분위기' }, { l: '쓸쓸한', t: '쓸쓸한 분위기' }] },
+    style: { ex: true, items: [
+      { l: '수채화', t: '수채화 그림책 스타일' }, { l: '색연필', t: '색연필로 그린 스타일' }, { l: '크레용', t: '크레용으로 그린 스타일' },
+      { l: '동화책 그림', t: '동화책 일러스트 스타일' }, { l: '만화', t: '귀여운 만화 스타일' }, { l: '연필 스케치', t: '연필 스케치 스타일' }] },
     camera: { ex: true, items: [
       { l: '인물이 가깝게', d: '얼굴과 표정이 크게 보여요', t: '인물을 가까이에서 본 모습' },
       { l: '인물이 멀게', d: '배경이 넓게 보여요', t: '인물을 멀리서 본 모습' },
@@ -844,35 +887,72 @@ body.dragging { user-select: none; -webkit-user-select: none; cursor: grabbing; 
   }
   var promptRefs = [];
   function sentence(s) { s = String(s || '').trim().replace(/[.。]+$/, ''); return s ? s + '.' : ''; }
-  function composePrompt(v) {
-    var out = [sentence(state.look), sentence(v.scene), sentence(v.action)];
+  function composeBody(v) {
+    var out = [sentence(v.scene), sentence(v.action)];
     if (v.setting.trim()) out.push('배경은 ' + sentence(v.setting));
-    if (v.mood.trim()) out.push('색감과 분위기는 ' + sentence(v.mood));
+    var mood = v.mood.trim();
+    if (mood) out.push(/(분위기|색|빛)\.?$/.test(mood) ? sentence(mood) : '분위기는 ' + sentence(mood));
     if (v.camera.trim()) out.push('구도는 ' + sentence(v.camera));
     return out.filter(Boolean).join(' ');
   }
-  function isEdited(v) { return typeof v.custom === 'string'; }
+  function composePrompt(v) { return [sentence(state.look), composeBody(v)].filter(Boolean).join(' '); }
+  function ownText(v) { return typeof v.custom === 'string' ? v.custom : ''; }
+  /* 처음 복사한 프롬프트를 저장해 두고, 그 뒤에 고쳤는지 알아요. */
+  function isEdited(v) { var f = String(v.first || '').trim(); return !!f && finalPrompt(v).trim() !== f; }
+  function markFirst(v) { var f = finalPrompt(v).trim(); if (f && !v.first) { v.first = f; save(); } }
+  /* 입력칸에는 주인공 외형 문장이 맨 앞에 미리 들어 있어요. 학생이 쓴 부분은 그 뒤예요. */
+  function bodyOf(v) {
+    var t = ownText(v).trim(), look = state.look.trim();
+    if (look && t.indexOf(look) === 0) t = t.slice(look.length).trim();
+    return t;
+  }
+  function boxValue(v) {
+    var t = ownText(v).trim(), look = state.look.trim();
+    if (!t) return look ? sentence(look) + ' ' : '';
+    return look && t.indexOf(look) !== 0 ? sentence(look) + ' ' + t : t;
+  }
   function missing(v) {
     var m = [];
     if (!state.look.trim()) m.push('주인공 외형');
+    if (!bodyOf(v)) m.push('프롬프트');
+    return m;
+  }
+  function helperMissing(v) {
+    var m = [];
     if (!v.scene.trim()) m.push('그릴 장면');
     if (!v.setting.trim()) m.push('배경');
     if (!v.mood.trim()) m.push('색감·분위기');
     return m;
   }
-  function draftPrompt(v) { return missing(v).length ? '' : composePrompt(v); }
-  function finalPrompt(v) { return isEdited(v) ? v.custom : draftPrompt(v); }
+  function draftPrompt(v) { return helperMissing(v).length ? '' : composePrompt(v); }
+  function finalPrompt(v) {
+    var t = ownText(v).trim();
+    if (!bodyOf(v)) return '';
+    var look = state.look.trim();
+    if (!look || t.indexOf(look) === 0) return t;
+    return sentence(look) + ' ' + t;
+  }
   function refreshPrompts() {
     promptRefs.forEach(function (r) {
-      if (!isEdited(r.v)) { r.ta.value = draftPrompt(r.v); autosize(r.ta); }
       var m = missing(r.v);
       r.msg.hidden = !m.length;
-      r.msg.textContent = '꼭 쓸 칸이 비어 있어요: ' + m.join(', ');
-      r.copy.disabled = !r.ta.value.trim();
+      r.msg.textContent = m.length ? '아직 비어 있어요: ' + m.join(', ') : '';
+      r.copy.disabled = !finalPrompt(r.v).trim();
+      var first = String(r.v.first || '').trim(), now = finalPrompt(r.v).trim();
+      if (!first) r.rev.replaceChildren();
+      else if (first === now) r.rev.replaceChildren(h('small', { class: 'hint2' }, '🔁 처음 프롬프트를 저장했어요. 그림이 마음에 들지 않아 고쳐 쓰면 수정 전·후가 여기에 보여요.'));
+      else r.rev.replaceChildren(h('div', { class: 'revbox' }, h('b', {}, em('🔁'), '수정 전·후'),
+        h('div', { class: 'revcols' }, h('div', {}, h('small', {}, '처음 프롬프트'), h('p', {}, first)), h('div', {}, h('small', {}, '고친 프롬프트'), h('p', {}, now)))));
+      if (document.activeElement !== r.ta) { var bv = boxValue(r.v); if (r.ta.value !== bv) { r.ta.value = bv; autosize(r.ta); } }
+      var KW = [['장면', 'scene'], ['표정·몸짓', 'action'], ['배경', 'setting'], ['분위기', 'mood'], ['구도', 'camera'], ['그림체', 'style']];
+      var pills = KW.filter(function (k) { return String(r.v[k[1]] || '').trim(); }).map(function (k) {
+        return h('span', { class: 'kw' }, h('b', {}, k[0]), String(r.v[k[1]]).trim());
+      });
+      r.kw.replaceChildren.apply(r.kw, pills.length ? pills : [h('small', { class: 'hint2' }, '①을 채우면 여기에 재료가 나타나요.')]);
     });
   }
   function visualSecs(sec, label, v, only1) {
-    var any = v.scene || v.action || v.setting || v.mood || v.camera;
+    var any = v.scene || v.action || v.setting || v.mood || v.camera || v.style || v.first;
     if (!any && !v.owner) return;
     sec(label + ' 담당', oneLine(ownerLabel(v)));
     if (only1) return;
@@ -881,8 +961,9 @@ body.dragging { user-select: none; -webkit-user-select: none; cursor: grabbing; 
     sec(label + ' 배경', oneLine(v.setting));
     sec(label + ' 색감·분위기', oneLine(v.mood));
     sec(label + ' 구도', oneLine(v.camera));
+    sec(label + ' 그림체', oneLine(v.style));
     sec(label + ' 이미지 프롬프트', oneLine(finalPrompt(v)));
-    if (isEdited(v)) sec(label + ' 이미지 프롬프트 초안', oneLine(draftPrompt(v)));
+    sec(label + ' 처음 프롬프트', oneLine(v.first));
   }
   function copyPrompt(ta) {
     ta.focus(); ta.select();
@@ -924,27 +1005,46 @@ body.dragging { user-select: none; -webkit-user-select: none; cursor: grabbing; 
       return h('div', { class: 'field wide' }, h('span', {}, text, reqTag(req)), hint ? h('small', { class: 'hint2' }, hint) : null,
         opts ? chipRow(inp, opts, change) : null, inp);
     }
-    var ta = h('textarea', { class: 'prompt', rows: 3, 'aria-label': label + ' 이미지 프롬프트' });
-    ta.value = finalPrompt(v);
+    var EXAMPLES = [
+      '아늑한 방에서 한 여자아이가 거울 앞에 서서 큰 소리로 대본을 읽고 있어요. 아침 햇살이 들어와서 따뜻한 느낌이에요. 얼굴이 크게 보이게 그려 주세요.',
+      '비 오는 날 학교 문 앞에서 한 여자아이가 우산을 꼭 잡고 망설이고 있어요. 하늘이 어둡고 쓸쓸한 느낌이에요. 멀리서 전체 모습이 보이게 그려 주세요.'];
+    v.chk = v.chk || {};
+    var ta = h('textarea', { class: 'prompt', rows: 4, 'aria-label': label + ' 이미지 프롬프트' });
+    ta.value = boxValue(v);
+    ta.addEventListener('focus', function () { if (!bodyOf(v)) { var n = ta.value.length; ta.setSelectionRange(n, n); } });
     var msg = h('small', { class: 'hint2 warnmsg' });
-    var copyBtn = h('button', { class: 'btn small primary', type: 'button', onclick: function () { copyPrompt(ta); } }, '프롬프트 복사');
-    promptRefs.push({ v: v, ta: ta, msg: msg, copy: copyBtn });
-    var note = h('small', { class: 'hint2' }, '직접 고친 글이에요.');
-    var back = h('button', { class: 'btn small', type: 'button' }, '처음 만든 글로 되돌리기');
-    function showEdited() { note.hidden = back.hidden = !isEdited(v); }
-    ta.addEventListener('input', function () { v.custom = ta.value; autosize(ta); save(); showEdited(); refreshPrompts(); });
-    back.addEventListener('click', function () { v.custom = null; ta.value = draftPrompt(v); autosize(ta); save(); showEdited(); toast('처음 만든 글로 되돌렸어요.'); });
-    showEdited();
+    var copyBtn = h('button', { class: 'btn small primary', type: 'button', onclick: function () { copyText(finalPrompt(v), '프롬프트를 복사했어요.'); markFirst(v); refreshPrompts(); } }, '프롬프트 복사');
+    var rev = h('div', { class: 'revwrap' });
+    var kw = h('div', { class: 'kwrow', 'aria-label': '①에서 쓴 재료' });
+    var allCb = h('input', { type: 'checkbox' });
+    allCb.checked = !!v.chk.all;
+    allCb.addEventListener('change', function () { v.chk.all = allCb.checked; save(); });
+    var allChk = h('label', { class: 'allchk' }, allCb, em('🔍'), h('span', {}, '내가 고른 모든 요소가 다 들어갔나요?'), h('small', { class: 'allok' }, '🎉 잘했어요!'));
+    promptRefs.push({ v: v, ta: ta, msg: msg, copy: copyBtn, kw: kw, rev: rev });
+    ta.addEventListener('input', function () { v.custom = ta.value; autosize(ta); save(); refreshPrompts(); });
+    function stepHead(n, t, d) { return h('div', { class: 'stephead' }, h('b', {}, n), h('span', {}, t), d ? h('small', { class: 'hint2' }, d) : null); }
     el.append(
-      h('div', { class: 'vis-grid' },
-        f('그릴 장면', 'scene', '예: 교실 맨 앞 자리에 앉은 주인공, 옆에서 친구 민지가 걱정스럽게 바라보고 있어요', '여럿이 나오면 누가 어디서 뭘 하는지 써요. 주인공 외형은 자동으로 들어가요. 예: 교실 맨 앞 자리에 앉은 주인공, 옆에서 친구 민지가 걱정스럽게 바라보고 있어요', null, true),
-        f('행동·표정', 'action', '예: 두 손을 꼭 쥐고 입술을 깨문 표정', '주인공의 행동과 표정을 써요. 예: 두 손을 꼭 쥐고 바닥을 내려다보는 불안한 표정', null, false),
-        f('배경', 'setting', '예: 햇살이 드는 교실, 반 친구들이 책상에 앉아 있어요', '어디에 누가 있나요? 쓰지 않은 건 AI가 마음대로 그려요. 예: 햇살이 드는 교실, 반 친구들이 책상에 앉아 있어요', null, true),
-        f('색감·분위기 (그림의 느낌)', 'mood', '예: 긴장된 분위기', '주인공의 마음을 써요. (보기: 신나는, 긴장된, 무서운, 쓸쓸한) 예: 긴장된 분위기', null, true),
-        f('구도 (어떻게 보이게 할까요?)', 'camera', '예: 인물을 가까이에서 본 모습', '하나만 골라요. 예: 표정을 보여 주고 싶으면 “인물이 가깝게”', OPT.camera, false)),
-      h('label', { class: 'field' }, h('span', {}, '이미지 프롬프트 (그림을 만드는 말) · 처음 만든 글을 읽고 고쳐 써요'),
-        h('small', { class: 'hint2' }, '꼭 쓸 칸을 모두 쓰면 만들어져요. 마음에 안 들면 고쳐 써요. 주인공이 없는 장면이라면 주인공에 대한 설명을 지워요.'), ta, msg, note),
-      h('div', { class: 'row' }, copyBtn, back));
+      h('div', { class: 'field wide' },
+        stepHead('①', '그림에 넣을 것을 채워요', '처음에는 ①부터 해요. 익숙해지면 ②에 바로 써도 돼요.'),
+        h('div', { class: 'vis-grid' },
+          f('무슨 장면인가요?', 'scene', '예: 거울 앞에서 발표 연습을 해요', '누가 어디서 무엇을 하는지 써요.', null, true),
+          f('어떤 표정과 몸짓인가요?', 'action', '예: 두 손을 꼭 쥐고 걱정하는 표정', '주인공의 표정이나 몸짓을 써요.', null, false),
+          f('어디인가요? (배경)', 'setting', '예: 햇살이 드는 교실', '장소와 주변에 있는 것을 써요. 쓰지 않으면 AI가 마음대로 그려요.', null, true),
+          f('어떤 느낌인가요? (분위기)', 'mood', '예: 따뜻한 분위기', '\u201c○○한 분위기\u201d로 써요. (보기: 신나는, 긴장된, 무서운, 쓸쓸한)', null, true),
+          f('어떻게 보이게 할까요? (구도)', 'camera', '예: 인물을 가까이에서 본 모습', '하나만 골라요.', OPT.camera, false),
+          f('어떤 그림체인가요? (그림체)', 'style', '예: 수채화 그림책 스타일', '하나만 골라요. 쓰지 않아도 돼요.', OPT.style, false))),
+      h('div', { class: 'field wide' },
+        stepHead('②', '①의 재료를 보고 문장으로 써요', '맨 앞 문장은 모둠이 정한 주인공 외형이에요. 그 뒤에 이어서, 위의 재료를 보고 누가 어디서 무엇을 하고 있는지 문장으로 설명해요.'),
+        exampleBox(['아늑한 방에서 한 여자아이가 거울 앞에 서서 대본을 읽고 있어요.', '따뜻한 느낌이에요.']),
+        kw,
+        ta,
+        msg,
+        allChk,
+        h('div', { class: 'row', style: 'margin-top:10px' }, copyBtn, h('small', { class: 'hint2' }, '캔바에 붙여 넣어요. 처음 복사한 프롬프트는 저장돼요.')),
+        rev),
+      h('details', { class: 'help' }, h('summary', {}, '💡 예시 보기'),
+        h('ul', {}, EXAMPLES.map(function (t) { return h('li', {}, t); })),
+        h('small', { class: 'hint2' }, '예시를 그대로 쓰지 말고, 내 장면에 맞게 바꿔요.')));
     refreshPrompts();
     return el;
   }
@@ -994,8 +1094,8 @@ body.dragging { user-select: none; -webkit-user-select: none; cursor: grabbing; 
           bodyText ? h('div', { class: 'row' }, h('button', { class: 'btn small', type: 'button', onclick: function () { copyText(bodyText, '글을 복사했어요.'); } }, '글 복사')) : null) : null,
         h('div', { class: 'field' }, h('span', {}, '이미지 프롬프트'),
           prompt ? h('blockquote', { class: 'quote' }, prompt)
-                 : h('p', { class: 'sub', style: 'margin:0' }, '아직 프롬프트가 없어요. 장면과 프롬프트에서 꼭 쓸 칸을 채워요.'),
-          h('div', { class: 'row' }, h('button', { class: 'btn small primary', type: 'button', disabled: !prompt, onclick: function () { copyText(prompt, '프롬프트를 복사했어요.'); } }, '프롬프트 복사'))));
+                 : h('p', { class: 'sub', style: 'margin:0' }, '아직 프롬프트가 없어요. 2단계에서 이 쪽의 프롬프트를 써요.'),
+          h('div', { class: 'row' }, h('button', { class: 'btn small primary', type: 'button', disabled: !prompt, onclick: function () { copyText(prompt, '프롬프트를 복사했어요.'); markFirst(p); } }, '프롬프트 복사'))));
     }
     var items = [];
     if (isMine(state.cover)) items.push(card('표지', state.cover, null, false));
@@ -1018,36 +1118,57 @@ body.dragging { user-select: none; -webkit-user-select: none; cursor: grabbing; 
       submitEl());
   }
 
+  /* 눈에 잘 띄는 예시 상자: lines = 한 줄씩 보여 줄 문장들 */
+  function exampleBox(lines) {
+    return h('div', { class: 'exbox' }, h('b', {}, em('✅'), '예시'),
+      h('p', {}, lines.join(' ')));
+  }
   function lookPanel(full) {
-    var look = h('textarea', { class: 'look', id: 'look', rows: 2, placeholder: '예: 열한 살 여자아이, 갈색 긴 머리, 노란 티셔츠, 청바지' });
+    var look = h('textarea', { class: 'look', id: 'look', rows: 2 });
     look.value = state.look;
-    look.addEventListener('input', function () { state.look = look.value; autosize(look); save(); refreshPrompts(); });
+    look.addEventListener('input', function () {
+      var old = state.look.trim(); state.look = look.value; var nw = state.look.trim();
+      if (old && old !== nw) [state.cover].concat(state.pages).forEach(function (v) {
+        var t = typeof v.custom === 'string' ? v.custom.trim() : '';
+        if (t && t.indexOf(old) === 0) v.custom = (nw ? sentence(nw) + ' ' : '') + t.slice(old.length).replace(/^[.。]?\s*/, '').trim();
+      });
+      autosize(look); save(); refreshPrompts();
+    });
 
     var SLOTS = [['age', '나이·성별', '예: 열한 살 여자아이'], ['hair', '머리', '예: 갈색 긴 머리'], ['outfit', '옷', '예: 노란 티셔츠, 청바지'],
       ['extra', '더 넣고 싶은 모습 (선택)', '예: 동그란 안경, 통통한 체형']];
-    function composeLook() {
-      return SLOTS.map(function (x) { return String(state.lookParts[x[0]] || '').trim(); }).filter(Boolean).join(', ');
+    var kwBox = h('div', { class: 'kwrow', 'aria-label': '①에서 쓴 낱말' });
+    var KWL = { age: '나이·성별', hair: '머리', outfit: '옷', extra: '더 넣고 싶은 모습' };
+    function refreshKw() {
+      var pills = SLOTS.filter(function (x) { return String(state.lookParts[x[0]] || '').trim(); }).map(function (x) {
+        return h('span', { class: 'kw' }, h('b', {}, KWL[x[0]]), String(state.lookParts[x[0]]).trim());
+      });
+      kwBox.replaceChildren.apply(kwBox, pills.length ? pills : [h('small', { class: 'hint2' }, '①을 채우면 여기에 낱말이 나타나요.')]);
     }
     var slotEls = SLOTS.map(function (x) {
       var inp = h('input', { type: 'text', placeholder: x[2], 'aria-label': x[1] });
       inp.value = state.lookParts[x[0]] || '';
-      inp.addEventListener('input', function () {
-        state.lookParts[x[0]] = inp.value;
-        state.look = composeLook(); look.value = state.look; autosize(look); save(); refreshPrompts();
-      });
+      inp.addEventListener('input', function () { state.lookParts[x[0]] = inp.value; save(); refreshKw(); });
       return h('label', { class: 'field' }, h('span', {}, x[1]), inp);
     });
+    refreshKw();
     var fixed = h('label', { class: 'field' }, h('span', {}, '주인공 외형 고정 문장 (모든 쪽에 똑같이 쓰는 문장)', reqTag(true)),
-      h('small', { class: 'hint2' }, full ? '모든 쪽에 똑같이 들어가요. 고쳐 써도 돼요.' : '모둠이 1단계에서 정한 문장이에요. 모둠이 함께 바꿀 때만 고쳐요.'), look);
+      h('small', { class: 'hint2' }, full ? '모든 쪽에 똑같이 들어가요.' : '모둠이 1단계에서 정한 문장이에요. 모둠이 함께 바꿀 때만 고쳐요.'), look);
     if (!full) return h('section', { class: 'panel', style: 'display:flex;flex-direction:column;gap:10px' },
       h('h2', { style: 'font-size:21px' }, em('📌'), '모든 쪽에 똑같이 넣어요'), fixed,
       h('div', { class: 'notice' }, '프롬프트에 유명 캐릭터나 작가의 이름, 실제 사람의 사진은 쓰지 않아요.'));
     return h('section', { class: 'panel lead', style: 'display:flex;flex-direction:column;gap:10px' },
       h('h2', { style: 'font-size:21px' }, role('lead'), '주인공 외형을 정해요 (모둠이 함께)'),
       h('small', { class: 'hint2' }, '이 문장은 모든 쪽의 프롬프트에 똑같이 들어가요. 다 정하면 아래에서 개요 전체를 복사해 모둠원에게 보내요.'),
-      h('div', { class: 'field' }, h('span', {}, '주인공 외형 만들기', reqTag(false)),
-        h('small', { class: 'hint2' }, '쓰고 싶은 칸만 채워요. 예: 열한 살 여자아이 / 갈색 긴 머리 / 노란 티셔츠, 청바지. 이야기에 꼭 필요한 모습만 \u201c더 넣고 싶은 모습\u201d에 존중하는 말로 써요.'),
+      h('div', { class: 'field' },
+        h('div', { class: 'stephead' }, h('b', {}, '①'), h('span', {}, '주인공의 모습을 낱말로 써요'),
+          h('small', { class: 'hint2' }, '쓰고 싶은 칸만 채워요. 이야기에 꼭 필요한 모습만 \u201c더 넣고 싶은 모습\u201d에 존중하는 말로 써요.')),
         h('div', { class: 'vis-grid' }, slotEls)),
+      h('div', { class: 'field' },
+        h('div', { class: 'stephead' }, h('b', {}, '②'), h('span', {}, '낱말을 보고 외형을 문장으로 써요'),
+          h('small', { class: 'hint2' }, '낱말을 이어서 모둠이 함께 써요.'),
+          exampleBox(['주인공은 열한 살 여자아이예요.', '머리는 갈색 긴 머리예요.', '노란 티셔츠, 청바지를 입고 있어요.'])),
+        kwBox),
       fixed,
       h('div', { class: 'notice' }, '유명 캐릭터나 작가의 이름, 실제 사람의 사진은 쓰지 않아요.'));
   }
@@ -1071,10 +1192,12 @@ body.dragging { user-select: none; -webkit-user-select: none; cursor: grabbing; 
       common,
       h('details', { class: 'help' }, h('summary', {}, em('💡'), '이미지 프롬프트는 이렇게 써요'),
         h('ul', {},
-          h('li', {}, '같은 외형 문장을 모든 쪽에 넣으면 인물이 덜 달라져요.'),
-          h('li', {}, '같은 친구가 여러 쪽에 나오면 짧은 설명을 복사해서 똑같이 써요.'),
-          h('li', {}, '표지를 먼저 만들고, 마음에 드는 그림을 기준으로 삼아요.'),
-          h('li', {}, 'AI는 손이나 글자를 어색하게 그려요. 꼭 확인해요.'))),
+          h('li', {}, '프롬프트는 AI에게 \u201c이런 그림을 그려 줘\u201d 하고 알려 주는 말이에요.'),
+          h('li', {}, '자세히 쓸수록 내가 생각한 그림과 비슷해져요.'),
+          h('li', {}, '이런 것을 알려 주면 좋아요: 누가 무엇을 하는지(장면·표정) / 어디인지(배경) / 어떤 느낌인지(분위기) / 어떻게 보이는지(구도) / 어떤 그림체인지(스타일). 낱말만 쓰지 말고 문장으로 설명해요.'),
+          h('li', {}, '아쉬운 글: \u201c방, 거울, 노란빛, 수채화\u201d처럼 낱말만 늘어놓아요.'),
+          h('li', {}, '좋은 글: \u201c아늑한 방에서 한 여자아이가 거울 앞에 서서 대본을 읽고 있어요. 따뜻한 느낌이에요.\u201d'),
+          h('li', {}, 'AI는 손이나 글자를 어색하게 그릴 때가 많아요. 그림을 꼭 살펴봐요.'))),
       h('div', { class: 'toolbar' }, h('span', { class: 'chip' }, state.mine ? state.mine + '번 담당 ' + items.length + '장' : '그림 ' + items.length + '장 (표지 포함)')),
       h('div', { class: 'vis-list' }, items));
   }

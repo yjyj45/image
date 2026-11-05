@@ -11,7 +11,7 @@
 
 var SHEET_NAME = '제출';
 var HEADERS = ['키', '보낸 시각', '모둠', '보낸 번호', '쪽', '담당', '글', '그릴 장면', '행동·표정', '배경',
-  '색감·분위기', '구도', '최종 프롬프트', '직접 고쳤나요', '핵심 장면', '그림책 제목', '주인공 외형'];
+  '색감·분위기', '구도', '최종 프롬프트', '수정했나요', '핵심 장면', '그림책 제목', '주인공 외형', '처음 프롬프트', '그림체'];
 var MAX_ROWS_PER_SEND = 12;      // 한 번에 받을 쪽 수 (표지 + 본문 여유 있게)
 var MAX_TEXT = 2000;             // 칸마다 받을 글자 수
 
@@ -64,7 +64,7 @@ function doPost(e) {
       var key = group + '|' + page;
       var line = [key, now, group, sender, page, clean_(r.owner), clean_(r.text), clean_(r.scene), clean_(r.action),
         clean_(r.setting), clean_(r.mood), clean_(r.camera), clean_(r.prompt), r.edited ? '예' : '아니요',
-        r.star ? '★' : '', clean_(data.title), clean_(data.look)];
+        r.star ? '★' : '', clean_(data.title), clean_(data.look), clean_(r.first), clean_(r.style)];
       if (index[key]) {
         sheet.getRange(index[key], 1, 1, line.length).setValues([line]);
       } else {
@@ -88,6 +88,8 @@ function getSheet_() {
     sheet.appendRow(HEADERS);
     sheet.setFrozenRows(1);
     sheet.hideColumns(1);                   // 키 칸은 숨겨 둡니다.
+  } else {
+    sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);   // 칸 이름을 최신으로 맞춥니다.
   }
   return sheet;
 }
