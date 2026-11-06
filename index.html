@@ -1002,7 +1002,7 @@ body.dragging { user-select: none; -webkit-user-select: none; cursor: grabbing; 
       inp.value = v[key] || '';
       var change = function (val) { v[key] = val; save(); refreshPrompts(); };
       inp.addEventListener('input', function () { change(inp.value); });
-      return h('div', { class: 'field wide' }, h('span', {}, text, reqTag(req)), hint ? h('small', { class: 'hint2' }, hint) : null,
+      return h('div', { class: 'field wide' }, h('span', {}, text), hint ? h('small', { class: 'hint2' }, hint) : null,
         opts ? chipRow(inp, opts, change) : null, inp);
     }
     var EXAMPLES = [
@@ -1025,7 +1025,7 @@ body.dragging { user-select: none; -webkit-user-select: none; cursor: grabbing; 
     function stepHead(n, t, d) { return h('div', { class: 'stephead' }, h('b', {}, n), h('span', {}, t), d ? h('small', { class: 'hint2' }, d) : null); }
     el.append(
       h('div', { class: 'field wide' },
-        stepHead('①', '그림에 넣을 것을 채워요', '처음에는 ①부터 해요. 익숙해지면 ②에 바로 써도 돼요.'),
+        stepHead('①', '그림에 넣을 것을 채워요', '여섯 가지를 모두 골라 보고 써요. 처음에는 ①부터 해요. 익숙해지면 ②에 바로 써도 돼요.'),
         h('div', { class: 'vis-grid' },
           f('무슨 장면인가요?', 'scene', '예: 거울 앞에서 발표 연습을 해요', '누가 어디서 무엇을 하는지 써요.', null, true),
           f('어떤 표정과 몸짓인가요?', 'action', '예: 두 손을 꼭 쥐고 걱정하는 표정', '주인공의 표정이나 몸짓을 써요.', null, false),
