@@ -740,9 +740,9 @@ body.dragging { user-select: none; -webkit-user-select: none; cursor: grabbing; 
       state.isExample && h('div', { class: 'notice example' }, '지금은 연습용 예시 이야기(다온이 이야기)가 들어 있어요. 우리 모둠의 6차시 글을 붙여 넣으면 바뀌어요.'),
       pasteArea('top', '6차시에서 복사한 글을 여기에 붙여 넣어요', '', '6차시 수정본을 복사해서 붙여 넣어요.', '6차시 글 불러오기'),
       h('div', { class: 'row' },
-        h('div', { class: 'grow' }, fieldInput('모둠 이름 또는 번호', state.group, function (v) { state.group = v; }, '', 'group', '우리 모둠의 이름이나 번호를 써요.')),
-        h('div', { class: 'grow' }, fieldInput('그림책 제목', state.title, function (v) { state.title = v; }, '', 'title', '6차시에서 정한 그림책 제목을 써요.')),
-        h('div', { class: 'grow' }, fieldInput('전하고 싶은 마음', state.intent, function (v) { state.intent = v; }, '', 'intent', '독자에게 전하고 싶은 마음을 써요.'))),
+        h('div', { class: 'grow' }, fieldInput('모둠 이름 또는 번호', state.group, function (v) { state.group = v; }, '예: 1모둠', 'group', '우리 모둠의 이름이나 번호를 써요.')),
+        h('div', { class: 'grow' }, fieldInput('그림책 제목', state.title, function (v) { state.title = v; }, '예: 발표는 어려워.', 'title', '6차시에서 정한 그림책 제목을 써요.')),
+        h('div', { class: 'grow' }, fieldInput('전하고 싶은 마음', state.intent, function (v) { state.intent = v; }, '예: 발표를 잘 하기 위해 노력해보자', 'intent', '독자에게 전하고 싶은 마음을 써요.'))),
       workExists() ? null : h('div', { class: 'row' },
         h('button', { class: 'btn small', type: 'button', onclick: function () { state = loadExample(); ui.msg = '예시 이야기로 바꿨어요.'; ui.msgAt = 'top'; save(); render(); } }, '예시로 연습하기')));
     return box;
