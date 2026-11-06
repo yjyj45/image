@@ -183,7 +183,7 @@ textarea.txt:focus { background: rgba(255, 255, 255, .35); }
 .link { border: 0; background: transparent; color: var(--note-ink); text-decoration: underline; cursor: pointer; font-size: 12px; padding: 2px 4px; opacity: .8; }
 
 .em { margin-right: 6px; font-style: normal; }
-.role { display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-body); font-size: 14px; font-weight: 700; line-height: 1.2; padding: 4px 11px; border-radius: 999px; margin-right: 8px; vertical-align: middle; }
+.role { display: inline-flex; align-items: center; gap: 6px; font-family: inherit; font-size: 1em; font-weight: 700; line-height: 1.2; padding: 3px 13px; border-radius: 999px; margin-right: 8px; vertical-align: middle; }
 .role-lead { background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent); }
 .role-mate { background: var(--good-soft); color: var(--good); border: 1px solid var(--good); }
 .guide .role { background: var(--surface); }
@@ -237,6 +237,10 @@ textarea.txt:focus { background: rgba(255, 255, 255, .35); }
 .revcols small { color: var(--muted); font-weight: 700; }
 .revcols p { margin: 2px 0 0; font-size: 14px; overflow-wrap: anywhere; }
 @media (max-width: 520px) { .revcols { grid-template-columns: minmax(0, 1fr); } }
+.fillnote { margin-top: 10px; padding: 8px 12px; border-radius: 10px; background: #fff3cf; border: 1px solid #ecd38a; color: #6a4b00; font-size: 14px; font-weight: 700; }
+.fillnote.done { background: var(--good-soft); border-color: var(--good); color: var(--good); }
+:root[data-theme="dark"] .fillnote:not(.done) { background: #3a3116; border-color: #7a6525; color: #f1d98a; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .fillnote:not(.done) { background: #3a3116; border-color: #7a6525; color: #f1d98a; } }
 .stephead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; font-weight: 700; margin-bottom: 4px; }
 .stephead b { background: var(--accent); color: #fff; border-radius: 50%; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; }
 .stephead small { flex-basis: 100%; font-weight: 400; }
@@ -938,6 +942,10 @@ body.dragging { user-select: none; -webkit-user-select: none; cursor: grabbing; 
       r.msg.hidden = !m.length;
       r.msg.textContent = m.length ? '아직 비어 있어요: ' + m.join(', ') : '';
       r.copy.disabled = !finalPrompt(r.v).trim();
+      var SIX = [['scene', '장면'], ['action', '표정·몸짓'], ['setting', '배경'], ['mood', '분위기'], ['camera', '구도'], ['style', '그림체']];
+      var empty = SIX.filter(function (k) { return !String(r.v[k[0]] || '').trim(); }).map(function (k) { return k[1]; });
+      r.fill.className = 'fillnote' + (empty.length ? '' : ' done');
+      r.fill.textContent = empty.length ? '💡 아직 비어 있어요: ' + empty.join(', ') + '. 여섯 가지를 모두 채워 보세요. 채울수록 그림이 내 생각에 가까워져요.' : '✔ 여섯 가지를 모두 채웠어요! 이제 ②에 문장으로 써 보세요.';
       var first = String(r.v.first || '').trim(), now = finalPrompt(r.v).trim();
       if (!first) r.rev.replaceChildren();
       else if (first === now) r.rev.replaceChildren(h('small', { class: 'hint2' }, '🔁 처음 프롬프트를 저장했어요. 그림이 마음에 들지 않아 고쳐 쓰면 수정 전·후가 여기에 보여요.'));
@@ -1016,11 +1024,12 @@ body.dragging { user-select: none; -webkit-user-select: none; cursor: grabbing; 
     var copyBtn = h('button', { class: 'btn small primary', type: 'button', onclick: function () { copyText(finalPrompt(v), '프롬프트를 복사했어요.'); markFirst(v); refreshPrompts(); } }, '프롬프트 복사');
     var rev = h('div', { class: 'revwrap' });
     var kw = h('div', { class: 'kwrow', 'aria-label': '①에서 쓴 재료' });
+    var fillNote = h('div', { class: 'fillnote', role: 'status' });
     var allCb = h('input', { type: 'checkbox' });
     allCb.checked = !!v.chk.all;
     allCb.addEventListener('change', function () { v.chk.all = allCb.checked; save(); });
     var allChk = h('label', { class: 'allchk' }, allCb, em('🔍'), h('span', {}, '내가 고른 모든 요소가 다 들어갔나요?'), h('small', { class: 'allok' }, '🎉 잘했어요!'));
-    promptRefs.push({ v: v, ta: ta, msg: msg, copy: copyBtn, kw: kw, rev: rev });
+    promptRefs.push({ v: v, ta: ta, msg: msg, copy: copyBtn, kw: kw, rev: rev, fill: fillNote });
     ta.addEventListener('input', function () { v.custom = ta.value; autosize(ta); save(); refreshPrompts(); });
     function stepHead(n, t, d) { return h('div', { class: 'stephead' }, h('b', {}, n), h('span', {}, t), d ? h('small', { class: 'hint2' }, d) : null); }
     el.append(
@@ -1032,7 +1041,8 @@ body.dragging { user-select: none; -webkit-user-select: none; cursor: grabbing; 
           f('어디인가요? (배경)', 'setting', '예: 햇살이 드는 교실', '장소와 주변에 있는 것을 써요. 쓰지 않으면 AI가 마음대로 그려요.', null, true),
           f('어떤 느낌인가요? (분위기)', 'mood', '예: 따뜻한 분위기', '\u201c○○한 분위기\u201d로 써요. (보기: 신나는, 긴장된, 무서운, 쓸쓸한)', null, true),
           f('어떻게 보이게 할까요? (구도)', 'camera', '예: 인물을 가까이에서 본 모습', '하나만 골라요.', OPT.camera, false),
-          f('어떤 그림체인가요? (그림체)', 'style', '예: 색연필', '하나만 골라요. 문장에 \u201c그림체는 색연필이에요\u201d처럼 써요. 캔바의 스타일 버튼은 눌러도 되고 안 눌러도 돼요.', OPT.style, false))),
+          f('어떤 그림체인가요? (그림체)', 'style', '예: 색연필', '하나만 골라요. 문장에 \u201c그림체는 색연필이에요\u201d처럼 써요. 캔바의 스타일 버튼은 눌러도 되고 안 눌러도 돼요.', OPT.style, false)),
+        fillNote),
       h('div', { class: 'field wide' },
         stepHead('②', '①의 재료를 보고 문장으로 써요', '맨 앞 문장은 모둠이 정한 주인공 외형이에요. 그 뒤에 이어서, 위의 재료를 보고 누가 어디서 무엇을 하고 있는지 문장으로 설명해요.'),
         exampleBox(['아늑한 방에서 한 여자아이가 거울 앞에 서서 대본을 읽고 있어요.', '따뜻한 느낌이에요.', '그림체는 색연필이에요.']),
