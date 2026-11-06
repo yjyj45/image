@@ -187,8 +187,15 @@ textarea.txt:focus { background: rgba(255, 255, 255, .35); }
 .role-lead { background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent); }
 .role-mate { background: var(--good-soft); color: var(--good); border: 1px solid var(--good); }
 .guide .role { background: var(--surface); }
-.panel.lead { border-left: 6px solid var(--accent); }
-.panel.mate { border-left: 6px solid var(--good); }
+.panel.lead { border-left: 6px solid var(--accent); background: #EAF4FD; border-color: #BFD9F2; border-left-color: var(--accent); }
+.panel.mate { border-left: 6px solid var(--good); background: #EBF7EE; border-color: #BFE0C8; border-left-color: var(--good); }
+.panel.lead .role-lead, .panel.mate .role-mate { background: var(--surface); }
+:root[data-theme="dark"] .panel.lead { background: #172C42; border-color: #2A4A6B; }
+:root[data-theme="dark"] .panel.mate { background: #16322A; border-color: #2A5545; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .panel.lead { background: #172C42; border-color: #2A4A6B; }
+  :root:not([data-theme="light"]) .panel.mate { background: #16322A; border-color: #2A5545; }
+}
 .stepnav { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .steptab { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 16px 6px 8px; font-weight: 700; cursor: pointer; display: inline-flex; gap: 8px; align-items: center; min-height: 40px; }
 .steptab b { width: 24px; height: 24px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font-size: 13px; }
