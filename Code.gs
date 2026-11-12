@@ -65,14 +65,17 @@ function setup() {
 
 /** 웹 앱 주소를 열면 앱 화면이 나옵니다. 주소 뒤에 ?ping=1 을 붙이면 연결 확인용 글자만 나옵니다. */
 function doGet(e) {
+  var why = '';
   if (!(e && e.parameter && e.parameter.ping)) {
     try {
       return HtmlService.createHtmlOutputFromFile('Index')
         .setTitle('그림책 개요 짜기')
         .addMetaTag('viewport', 'width=device-width, initial-scale=1');
-    } catch (err) { /* Index 파일이 없으면 아래 연결 확인 글자를 보여 줍니다. */ }
+    } catch (err) { why = String(err); }   // Index 파일이 없거나 이름이 다르면 여기로 옵니다.
   }
-  return json_({ ok: true, hello: '그림책 개요 앱 제출 받기' });
+  var out = { ok: true, hello: '그림책 개요 앱 제출 받기' };
+  if (why) out.note = '앱 화면을 못 찾았어요. HTML 파일 이름이 Index 인지 확인해요. (' + why + ')';
+  return json_(out);
 }
 
 /** (예전 방식) 다른 곳에 둔 앱 화면에서 보낸 제출을 받습니다. */
