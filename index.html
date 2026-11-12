@@ -117,6 +117,8 @@ input[type=text] { width: 100%; background: var(--surface); border: 1px solid va
 .btn.small { min-height: 30px; padding: 3px 10px; font-size: 13px; border-radius: 8px; }
 label.btn:focus-within { outline: 3px solid var(--accent); outline-offset: 2px; }
 
+.srvbar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin: 8px 0 10px; font-size: 14px; font-weight: 700; color: var(--muted); }
+.panel.resume { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
 .notice { border-radius: 10px; padding: 9px 12px; font-size: 14px; background: var(--surface-2); }
 .notice.example { background: var(--star-soft); }
 .notice.warn { background: var(--warn-soft); color: var(--warn); font-weight: 500; }
@@ -297,7 +299,7 @@ body.dragging { user-select: none; -webkit-user-select: none; cursor: grabbing; 
   ].join('\n');
 
   var state = null;
-  var ui = { sending: false, sentMsg: '', msg: '', msgAt: 'top', pendingAt: 'top', pending: null, previewOpen: false, fileDrag: false, confirmRemove: null };
+  var ui = { resumeOpen: false, resumeGroup: null, resumeMine: null, resumeMsg: '', resumeConfirm: false, sending: false, sentMsg: '', msg: '', msgAt: 'top', pendingAt: 'top', pending: null, previewOpen: false, fileDrag: false, confirmRemove: null };
   var lastDeleted = null, toastTimer = null, saveTimer = null;
 
   /* ---------- 도우미 ---------- */
@@ -451,6 +453,7 @@ body.dragging { user-select: none; -webkit-user-select: none; cursor: grabbing; 
     clearTimeout(saveTimer);
     saveTimer = setTimeout(function () {
       try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* 저장을 못 해도 계속 쓸 수 있어요 */ }
+      srvSaveSoon();
     }, 250);
   }
   function load() {
@@ -462,6 +465,85 @@ body.dragging { user-select: none; -webkit-user-select: none; cursor: grabbing; 
       }
     } catch (e) { /* 무시 */ }
     return null;
+  }
+
+  /* ---------- 서버 저장 (스크립트 주소로 열었을 때만 켜져요) ---------- */
+  var SRV = !!(window.google && window.google.script && window.google.script.run);
+  var srv = { text: '', timer: null };
+  function srvCall(name, args, ok, bad) {
+    var fail = bad || function () { ok(null); };
+    try {
+      var run = window.google.script.run.withSuccessHandler(ok).withFailureHandler(fail);
+      run[name].apply(run, args);
+    } catch (e) { fail(e); }
+  }
+  function srvKey() {
+    var g = String(state.group || '').trim();
+    return g && /^\d+$/.test(state.mine || '') && !state.isExample ? { group: g, mine: state.mine } : null;
+  }
+  function srvStatus(t) { srv.text = t; var el = document.getElementById('srv-status'); if (el) el.textContent = t; }
+  function hhmm() { var d = new Date(); return d.getHours() + ':' + ('0' + d.getMinutes()).slice(-2); }
+  function srvSaveSoon() {
+    if (!SRV || !state) return;
+    clearTimeout(srv.timer); srv.timer = null;
+    if (state.isExample) { srvStatus('☁️ 예시 연습은 서버에 저장하지 않아요.'); return; }
+    if (!srvKey()) { srvStatus('☁️ 모둠 이름과 내 번호를 정하면 자동으로 저장돼요.'); return; }
+    srvStatus('☁️ 저장 중…');
+    srv.timer = setTimeout(function () { srv.timer = null; srvSaveNow(); }, 2500);
+  }
+  function srvSaveNow() {
+    var k = srvKey(); if (!k) return;
+    srvCall('saveWork', [k.group, k.mine, JSON.stringify(state)], function (r) {
+      if (r && r.ok) srvStatus('☁️ 저장됨 ✔ ' + hhmm());
+      else srvStatus('☁️ 저장하지 못했어요. 인터넷을 확인해요. (이 기기에는 저장돼 있어요.)');
+    });
+  }
+  document.addEventListener('visibilitychange', function () {
+    if (SRV && document.visibilityState === 'hidden' && srv.timer) { clearTimeout(srv.timer); srv.timer = null; srvSaveNow(); }
+  });
+  function setResumeMsg(t) {
+    ui.resumeMsg = t;
+    var el = document.getElementById('resume-msg');
+    if (el) { el.textContent = t; el.hidden = !t; }
+  }
+  function doResume() {
+    var g = String(ui.resumeGroup != null ? ui.resumeGroup : (state.group || '')).trim();
+    var m = String(ui.resumeMine != null ? ui.resumeMine : (state.mine || '')).trim().replace(/번$/, '');
+    if (!g || !/^\d+$/.test(m)) { setResumeMsg('모둠 이름(번호)과 내 번호(숫자)를 써요.'); return; }
+    if (workExists() && !ui.resumeConfirm) { ui.resumeConfirm = true; setResumeMsg('이 기기에 하던 작업이 있어요. 불러오면 지금 화면이 바뀌어요. 계속하려면 한 번 더 눌러요.'); return; }
+    setResumeMsg('불러오는 중이에요…');
+    srvCall('loadWork', [g, m], function (r) {
+      if (!r || !r.ok) { setResumeMsg('불러오지 못했어요. 인터넷을 확인하고 다시 해요.'); return; }
+      if (!r.json) { setResumeMsg('저장된 작업이 없어요. 모둠 이름(번호)과 내 번호를 저장할 때와 똑같이 썼는지 확인해요.'); return; }
+      var s = null;
+      try { s = JSON.parse(r.json); } catch (e) { s = null; }
+      if (!s || !Array.isArray(s.pool) || !Array.isArray(s.pages) || !s.pages.length) { setResumeMsg('저장된 내용이 이상해요. 선생님께 알려요.'); return; }
+      state = normalize(s); state.isExample = false;
+      ui.resumeOpen = false; ui.resumeMsg = ''; ui.resumeConfirm = false; ui.resumeGroup = null; ui.resumeMine = null;
+      save(); render(); toast('저장해 둔 작업을 불러왔어요.' + (r.at ? ' (' + r.at + ' 저장)' : ''));
+    });
+  }
+  function resumeEl() {
+    var g = h('input', { type: 'text', placeholder: '예: 1모둠', 'aria-label': '이어 할 모둠 이름 또는 번호' });
+    var m = h('input', { type: 'text', inputmode: 'numeric', maxlength: 3, placeholder: '예: 1', 'aria-label': '이어 할 내 번호' });
+    g.value = ui.resumeGroup != null ? ui.resumeGroup : (state.group || '');
+    m.value = ui.resumeMine != null ? ui.resumeMine : (state.mine || '');
+    g.addEventListener('input', function () { ui.resumeGroup = g.value; ui.resumeConfirm = false; });
+    m.addEventListener('input', function () { ui.resumeMine = m.value; ui.resumeConfirm = false; });
+    return h('section', { class: 'panel resume', id: 'resume-panel' },
+      h('h2', { style: 'font-size:19px' }, em('☁️'), '하던 작업 이어서 하기'),
+      h('small', { class: 'hint2' }, '저장할 때 쓴 모둠 이름(번호)과 내 번호를 똑같이 써요.'),
+      h('div', { class: 'row' },
+        h('label', { class: 'field grow' }, h('span', {}, '이어 할 모둠 이름 또는 번호'), g),
+        h('label', { class: 'field', style: 'max-width:140px' }, h('span', {}, '이어 할 내 번호'), m)),
+      h('div', { class: 'notice', id: 'resume-msg', hidden: !ui.resumeMsg }, ui.resumeMsg || ''),
+      h('div', { class: 'row' }, h('button', { class: 'btn primary', type: 'button', onclick: doResume }, '불러오기')));
+  }
+  function srvBar() {
+    if (!SRV) return null;
+    return h('div', { class: 'srvbar' },
+      h('span', { id: 'srv-status' }, srv.text),
+      h('button', { class: 'btn small', type: 'button', onclick: function () { ui.resumeOpen = !ui.resumeOpen; render(); } }, ui.resumeOpen ? '닫기' : '이어서 하기'));
   }
 
   /* ---------- 카드 위치 ---------- */
@@ -606,13 +688,20 @@ body.dragging { user-select: none; -webkit-user-select: none; cursor: grabbing; 
   function sendSheet() {
     if (ui.sending) return;
     var code = getCode().trim();
-    if (!validCode(code)) { toast('선생님이 알려 준 제출 코드를 먼저 붙여 넣어요.'); return; }
+    if (!SRV && !validCode(code)) { toast('선생님이 알려 준 제출 코드를 먼저 붙여 넣어요.'); return; }
     if (!String(state.group || '').trim()) { toast('1단계에서 모둠 이름이나 번호를 먼저 써요.'); return; }
     if (!state.mine) { toast('위에서 내 번호를 먼저 골라요.'); return; }
     var data = buildSubmit();
     if (!data.rows.length) { toast('보낼 쪽이 없어요.'); return; }
     ui.sending = true; ui.sentMsg = '보내는 중이에요…'; refreshSubmit();
     var done = function (m) { ui.sending = false; ui.sentMsg = m; refreshSubmit(); toast(m); };
+    if (SRV) {
+      srvCall('submitRows', [data], function (j) {
+        if (j && j.ok) done('선생님께 보냈어요. (' + (j.count || data.rows.length) + '장)');
+        else done('보내지 못했어요. 잠시 뒤 다시 보내거나 파일로 저장해서 올려요.');
+      });
+      return;
+    }
     var body = JSON.stringify(data);
     fetch(code, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: body, redirect: 'follow' })
       .then(function (r) { return r.json(); })
@@ -635,8 +724,8 @@ body.dragging { user-select: none; -webkit-user-select: none; cursor: grabbing; 
     var codeInp = h('input', { type: 'text', placeholder: '선생님이 알려 준 주소를 붙여 넣어요', 'aria-label': '제출 코드', style: 'width:100%' });
     codeInp.value = getCode();
     var sendBtn = h('button', { class: 'btn primary', type: 'button', id: 'send-btn', onclick: sendSheet }, '시트로 보내기');
-    sendBtn.hidden = !validCode(getCode().trim());
-    function syncCode() { sendBtn.hidden = !validCode(codeInp.value.trim()); }
+    sendBtn.hidden = !SRV && !validCode(getCode().trim());
+    function syncCode() { sendBtn.hidden = !SRV && !validCode(codeInp.value.trim()); }
     codeInp.addEventListener('input', function () { setCode(codeInp.value.trim()); syncCode(); });
     syncCode();
     var el = h('section', { class: 'panel', style: 'display:flex;flex-direction:column;gap:10px', id: 'submit-panel' },
@@ -645,7 +734,7 @@ body.dragging { user-select: none; -webkit-user-select: none; cursor: grabbing; 
       h('div', { class: 'row' },
         h('button', { class: 'btn primary', type: 'button', onclick: download }, '파일로 저장'), sendBtn),
       h('div', { class: 'notice', id: 'sent-msg', hidden: true }),
-      h('details', { class: 'help' }, h('summary', {}, '선생님이 제출 코드를 알려 줬나요?'), codeInp,
+      SRV ? null : h('details', { class: 'help' }, h('summary', {}, '선생님이 제출 코드를 알려 줬나요?'), codeInp,
         h('small', { class: 'hint2' }, '코드를 붙여 넣으면 \u201c시트로 보내기\u201d 버튼이 나타나요. 처음 한 번만 붙여 넣어요.')));
     return el;
   }
@@ -709,6 +798,8 @@ body.dragging { user-select: none; -webkit-user-select: none; cursor: grabbing; 
     return h('header', {},
       h('h1', {}, em('📚'), '그림책 개요 짜기'),
       h('p', { class: 'sub' }, '7차시 · 이야기를 쪽으로 나누고, 쪽마다 그릴 장면과 이미지 프롬프트를 정리해요.'),
+      srvBar(),
+      SRV && ui.resumeOpen ? resumeEl() : null,
       state.step === 1 ? h('ol', { class: 'guide' },
         h('li', {}, role('lead'), '6차시 글을 맨 위 칸에 붙여 넣고, 글 카드를 쪽으로 끌어 넣어요. 주인공 외형을 정한 뒤 개요를 복사해 보내요.'),
         h('li', {}, role('mate'), '맨 아래 칸에 대표가 보낸 개요를 붙여 넣어요.')) : null,
@@ -1362,6 +1453,7 @@ body.dragging { user-select: none; -webkit-user-select: none; cursor: grabbing; 
 
   /* ---------- 시작 ---------- */
   state = load() || blankState();
+  if (SRV) srv.text = workExists() ? '☁️ 모둠 이름과 내 번호를 정하면 자동으로 저장돼요.' : '☁️ 다른 기기에서 하던 작업이 있으면 "이어서 하기"를 눌러요.';
   (function takeCodeFromLink() {
     var m = /[#&]c=([^&]+)/.exec(location.hash || '');
     if (!m) return;
